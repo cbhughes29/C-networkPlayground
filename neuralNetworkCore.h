@@ -1,15 +1,15 @@
-//
-// Created by Christian on 1/3/2025.
-//
 
 #ifndef NEURALNETWORKCORE_H
 #define NEURALNETWORKCORE_H
 
+// Base components for standard artifical neural networks
 
+double relu(double x);
+double sigmoid(double x);
 
-class neuralNetworkCore {
-
-};
+class Neuron;
+class Layer;
+class NeuralNetwork;
 
 
 
