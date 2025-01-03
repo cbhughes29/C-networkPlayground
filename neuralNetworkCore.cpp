@@ -94,7 +94,7 @@ public:
 
 class NeuralNetwork {
 private:
-    int inputSize;
+    int  inputSize;
     int numberOfLayers;
     std::vector<int> neuronsPerLayer;
     std::vector<Layer> layers;
