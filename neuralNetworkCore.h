@@ -21,6 +21,12 @@ double sigmoid(double x);
 double sigmoidDerivative(double x);
 double reluDerivative(double x);
 
+// Loss functions
+
+double MSE(std::vector<double>& ypred, std::vector<double>& y);
+
+double MAE(std::vector<double>& ypred, std::vector<double>& y);
+
 // Neuron
 
 class Neuron {

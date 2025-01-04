@@ -25,6 +25,42 @@ double reluDerivative(double x) {
     return x > 0 ? 1 : 0;
 }
 
+// Loss functions
+
+double MSE(std::vector<double>& ypred, std::vector<double>& y) {
+    if (ypred.size() != y.size()) {
+        throw std::invalid_argument("MSE: ypred and y must be vectors of the same size!");
+    }
+    if (ypred.size() == 0) {
+        throw std::invalid_argument("MSE: Invalid vector input of size 0");
+    }
+
+    double sum = 0;
+
+    for (int i = 0; i < ypred.size(); i++) {
+        sum += (ypred[i] - y[i]) * (ypred[i] - y[i]);
+    }
+
+    return sum / static_cast<double>(ypred.size());
+}
+
+double MAE(std::vector<double> &ypred, std::vector<double> &y) {
+    if (ypred.size() != y.size()) {
+        throw std::invalid_argument("MSE: ypred and y must be vectors of the same size!");
+    }
+    if (ypred.size() == 0) {
+        throw std::invalid_argument("MSE: Invalid vector input of size 0");
+    }
+
+    double sum = 0;
+
+    for (int i = 0; i < ypred.size(); i++) {
+        sum += abs(ypred[i] - y[i]);
+    }
+
+    return sum / static_cast<double>(ypred.size());
+}
+
 // Layer
 
 Layer::Layer(int numberOfNeurons, int numberOfInputs, Neuron inputNeuron) : numberOfNeurons(numberOfNeurons), numberOfInputs(numberOfInputs), neuron(inputNeuron), weights(numberOfNeurons, std::vector<double>(numberOfInputs, 0.0)), biases(numberOfNeurons)  {
@@ -103,6 +139,3 @@ std::vector<double> NeuralNetwork::forwardPropagate(std::vector<double>& inputs)
     }
     return currentInput;
 }
-
-
-
