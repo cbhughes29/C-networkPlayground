@@ -1,13 +1,4 @@
-//
-// Created by Christian on 1/3/2025.
-//
 #include "neuralNetworkCore.h"
-#include <vector>
-#include <functional>
-#include <math.h>
-#include <valarray>
-#include <random>
-#include <stdexcept>
 
 double randWeightsLowerBound = 0.0;
 double randWeightsUpperBound = 1.0;
@@ -34,86 +25,84 @@ double reluDerivative(double x) {
     return x > 0 ? 1 : 0;
 }
 
-// Neuron, Layer, and Network classes
+// Layer
 
-class Neuron {
-private:
-    std::function<double(double)> activationFunction;
-public:
-    Neuron(std::function<double(double)>& activationFunction) {}
-    double activate(double x) {
-        return activationFunction(x);
+Layer::Layer(int numberOfNeurons, int numberOfInputs, Neuron inputNeuron) : numberOfNeurons(numberOfNeurons), numberOfInputs(numberOfInputs), neuron(inputNeuron), weights(numberOfNeurons, std::vector<double>(numberOfInputs, 0.0)), biases(numberOfNeurons)  {
+
+    if (numberOfInputs <= 0) {
+        throw std::invalid_argument("Layer: numberOfInputs must be greater than zero");
     }
-};
-
-class Layer {
-private:
-    int numberOfNeurons;
-    int numberOfInputs;
-    std::vector<std::vector<double>> weights; // Each row contains weights for one neuron
-    std::vector<double> biases;
-    Neuron neuron;
-public:
-    Layer(int numberOfNeurons, int numberOfInputs, Neuron inputNeuron) : numberOfNeurons(numberOfNeurons), numberOfInputs(numberOfInputs), neuron(inputNeuron) {
-
-        if (numberOfInputs <= 0) {
-            throw std::invalid_argument("Layer: numberOfInputs must be greater than zero");
-        }
-        if (numberOfNeurons <= 0) {
-            throw std::invalid_argument("Layer: numberOfNeurons must be greater than zero");
-        }
-
-        // Initialize random weights
-        std::vector<std::vector<double>> weights(numberOfNeurons, std::vector<double>(numberOfInputs, 0.0));
-        for (int i = 0; i < numberOfNeurons; i++) {
-            for (int j = 0; j < numberOfInputs; j++) {
-                double randomDoubleForWeight = uniform_distribution(generator);
-                weights[i][j] = randomDoubleForWeight;
-            }
-            double randomDoubleForBias = uniform_distribution(generator);
-            biases[i] = randomDoubleForBias;
-        }
+    if (numberOfNeurons <= 0) {
+        throw std::invalid_argument("Layer: numberOfNeurons must be greater than zero");
     }
 
-    std::vector<double> computeLayerAction(const std::vector<double>& inputs) {
-        std::vector<double> output;
-        for (int i = 0; i < numberOfNeurons; i++) {
-            double sum = 0;
-            for (int j = 0; j < numberOfInputs; j++) {
-                double inputTimesWeight = inputs[j] * weights[i][j];
-                sum += inputTimesWeight;
-            }
-            sum += biases[i];
-            output[i] = neuron.activate(sum);
+    // Initialize random weights
+    for (int i = 0; i < numberOfNeurons; i++) {
+        for (int j = 0; j < numberOfInputs; j++) {
+            double randomDoubleForWeight = uniform_distribution(generator);
+            weights[i][j] = randomDoubleForWeight;
         }
-        return output;
+        biases[i] = uniform_distribution(generator);
+    }
+}
+
+
+std::vector<double> Layer::computeLayerAction(std::vector<double>& inputs) {
+    std::vector<double> output(numberOfNeurons);
+    for (int i = 0; i < numberOfNeurons; i++) {
+        double sum = 0;
+        for (int j = 0; j < numberOfInputs; j++) {
+            sum += inputs[j] * weights[i][j];
+        }
+        sum += biases[i];
+        output[i] = neuron.activate(sum);
+    }
+    return output;
+}
+
+// Network
+
+NeuralNetwork::NeuralNetwork(int numInputs, int numLayers, std::vector<int> numNeuronsPerLayer, std::vector<std::function<double(double)>>& activationFunctionsPerLayer) : inputSize(numInputs), numberOfLayers(numLayers) {
+    if (numInputs <= 0) {
+        throw std::invalid_argument("NeuralNetwork: numberOfInputs must be greater than zero");
+    }
+    if (numLayers <= 0) {
+        throw std::invalid_argument("NeuralNetwork: numberOfLayers must be greater than zero");
+    }
+    if (numNeuronsPerLayer.size() != numLayers) {
+        throw std::invalid_argument("NeuralNetwork: numNeuronsPerLayer must be equal to numLayers");
+    }
+    if (activationFunctionsPerLayer.size() != numLayers) {
+        throw std::invalid_argument("NeuralNetwork: activationFunctionsPerLayer must be equal to numLayers");
     }
 
-};
+    // Create layers
+    int currentNumInputs = numInputs;
+    neuronsPerLayer = numNeuronsPerLayer;
 
+    for (int i = 0; i < numLayers; i++) {
+        Neuron neuronForCurrentLayer(activationFunctionsPerLayer[i]);
+        int numberOfNeuronsForCurrentLayer = numNeuronsPerLayer[i];
+        Layer currentLayer(numberOfNeuronsForCurrentLayer, currentNumInputs, neuronForCurrentLayer);
+        layers.push_back(currentLayer);
+        currentNumInputs = numberOfNeuronsForCurrentLayer;
+    }
+    outputSize = currentNumInputs;
+}
 
-class NeuralNetwork {
-private:
-    int  inputSize;
-    int numberOfLayers;
-    std::vector<int> neuronsPerLayer;
-    std::vector<Layer> layers;
-public:
-    NeuralNetwork(int numInputs, int numLayers, std::vector<int> numNeuronsPerLayer, std::vector<std::function<double(double)>>& activationFunctionsPerLayer) : inputSize(numInputs), numberOfLayers(numLayers) {
-        if (numInputs <= 0) {
-            throw std::invalid_argument("NeuralNetwork: numberOfInputs must be greater than zero");
-        }
-        if (numLayers <= 0) {
-            throw std::invalid_argument("NeuralNetwork: numberOfLayers must be greater than zero");
-        }
-
-        neuronsPerLayer = numNeuronsPerLayer;
-        // Create layers
-
+std::vector<double> NeuralNetwork::forwardPropagate(std::vector<double>& inputs) {
+    if (inputs.size() != inputSize) {
+        throw std::invalid_argument("NeuralNetwork: number of inputs must be equal to inputSize");
     }
 
-};
+    std::vector<double> output(outputSize);
+
+    std::vector<double> currentInput = inputs;
+    for (int i = 0; i < numberOfLayers; i++) {
+        currentInput = layers[i].computeLayerAction(currentInput);
+    }
+    return currentInput;
+}
 
 
 
-//
